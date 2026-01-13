@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Ultimate Slot Machine</title>
+<title>Ultimate Graphical 5x4 Slot</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
 body {
@@ -27,8 +27,9 @@ h1 {color:gold; margin:15px 0; font-size:24px;}
     position:relative; overflow:hidden;
 }
 .cell img { width:60px; height:60px; object-fit:contain; transition: transform 0.2s;}
-.highlight{ box-shadow:0 0 20px lime; animation: flash 0.5s infinite;}
+.spinning { animation: spin 0.3s infinite; }
 @keyframes flash{0%,100%{box-shadow:0 0 20px lime;}50%{box-shadow:0 0 40px lime;}}
+.highlight{ box-shadow:0 0 20px lime; animation: flash 0.5s infinite;}
 button { padding:6px 12px; font-size:14px; background:gold; border:none; border-radius:6px; cursor:pointer; margin:3px;}
 input { width:80px; padding:4px; text-align:center; font-size:14px;}
 .info { margin-top:6px; font-size:16px;}
@@ -39,7 +40,7 @@ input { width:80px; padding:4px; text-align:center; font-size:14px;}
 </head>
 <body>
 
-<h1>🎰 Ultimate Animated 5x4 Slot Machine</h1>
+<h1>🎰 Ultimate Graphical 5x4 Slot</h1>
 
 <div class="machine">
 <div class="info">Balance: 💰 <span id="balance">1000</span></div>
@@ -53,19 +54,20 @@ input { width:80px; padding:4px; text-align:center; font-size:14px;}
 <div class="info" id="message"></div>
 </div>
 
+<!-- Sounds -->
 <audio id="spinSound" src="https://freesound.org/data/previews/341/341695_6241116-lq.mp3"></audio>
 <audio id="winSound" src="https://freesound.org/data/previews/331/331912_3248244-lq.mp3"></audio>
 <audio id="jackpotSound" src="https://freesound.org/data/previews/210/210096_3594527-lq.mp3"></audio>
 
 <script>
-// Graphical symbols (replace with high-res if desired)
+// Working free image URLs
 const symbols=[
-    {name:"cherry",img:"https://i.postimg.cc/3JrR9yBx/cherry.png"},
-    {name:"lemon",img:"https://i.postimg.cc/fTchhXvV/lemon.png"},
-    {name:"bell",img:"https://i.postimg.cc/j5wbnYTN/bell.png"},
-    {name:"diamond",img:"https://i.postimg.cc/1t0J9Y4v/diamond.png"},
-    {name:"star",img:"https://i.postimg.cc/pdc0xkkz/star.png"}, // scatter
-    {name:"seven",img:"https://i.postimg.cc/2yJv3Lz7/seven.png"} // jackpot
+    {name:"cherry",img:"https://i.ibb.co/rQhVjVd/cherry.png"},
+    {name:"lemon",img:"https://i.ibb.co/mNDq9Gx/lemon.png"},
+    {name:"bell",img:"https://i.ibb.co/0JQv1z2/bell.png"},
+    {name:"diamond",img:"https://i.ibb.co/fXMQ7WQ/diamond.png"},
+    {name:"star",img:"https://i.ibb.co/dMjD0wY/star.png"}, // scatter
+    {name:"seven",img:"https://i.ibb.co/Wsz6nLC/seven.png"} // jackpot
 ];
 const scatter="star"; const jackpot="seven";
 
@@ -144,4 +146,3 @@ function showMessage(text,type){ document.getElementById("message").innerHTML=`<
 </script>
 </body>
 </html>
-
