@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Realistic Scatter Slot</title>
+<title>Scatter Slot 5x4</title>
 
 <style>
     body {
@@ -13,34 +13,36 @@
     }
 
     h1 {
-        margin-top: 20px;
         color: gold;
+        margin-top: 20px;
     }
 
     .machine {
         background: #222;
-        width: 420px;
+        width: 600px;
         margin: 30px auto;
         padding: 20px;
         border-radius: 15px;
         box-shadow: 0 0 20px gold;
     }
 
-    .reels {
-        display: flex;
-        justify-content: space-around;
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(5, 90px);
+        grid-template-rows: repeat(4, 90px);
+        gap: 10px;
+        justify-content: center;
         margin: 20px 0;
     }
 
-    .reel {
+    .cell {
         width: 90px;
         height: 90px;
-        font-size: 50px;
+        font-size: 42px;
         background: black;
         border: 3px solid gold;
         border-radius: 10px;
         line-height: 90px;
-        animation: none;
     }
 
     .spinning {
@@ -54,51 +56,55 @@
     }
 
     button {
-        padding: 10px 30px;
-        font-size: 18px;
+        padding: 8px 16px;
+        font-size: 16px;
         background: gold;
         border: none;
-        border-radius: 8px;
+        border-radius: 6px;
         cursor: pointer;
+        margin: 5px;
     }
 
-    button:disabled {
-        background: gray;
-        cursor: not-allowed;
+    input {
+        width: 100px;
+        padding: 5px;
+        text-align: center;
     }
 
     .info {
-        margin-top: 15px;
+        margin-top: 10px;
         font-size: 18px;
     }
 
-    .win {
-        color: lime;
-        font-weight: bold;
-    }
-
-    .lose {
-        color: #ff4444;
-    }
+    .win { color: lime; }
+    .lose { color: #ff4444; }
 </style>
 </head>
 
 <body>
 
-<h1>🎰 Scatter Slot Machine</h1>
+<h1>🎰 Scatter Slot Machine (5 × 4)</h1>
 
 <div class="machine">
 
     <div class="info">
-        Balance: 💰 <span id="balance">1000</span><br>
-        Bet: 💵 <span id="bet">50</span>
+        Balance: 💰 <span id="balance">1000</span>
     </div>
 
-    <div class="reels">
-        <div class="reel" id="r1">❓</div>
-        <div class="reel" id="r2">❓</div>
-        <div class="reel" id="r3">❓</div>
+    <div class="info">
+        Set Balance:
+        <input type="number" id="balanceInput" value="1000" min="0">
+        <button onclick="setBalance()">Apply</button>
     </div>
+
+    <div class="info">
+        Bet:
+        <button onclick="changeBet(-10)">➖</button>
+        <span id="bet">50</span>
+        <button onclick="changeBet(10)">➕</button>
+    </div>
+
+    <div class="grid" id="slotGrid"></div>
 
     <button id="spinBtn" onclick="spin()">SPIN</button>
 
@@ -114,17 +120,47 @@
     let bet = 50;
     let freeSpins = 0;
 
+    const rows = 4;
+    const cols = 5;
+    const minBet = 10;
+    const maxBet = 500;
+
+    const grid = document.getElementById("slotGrid");
+
+    // Create grid cells
+    for (let i = 0; i < rows * cols; i++) {
+        const div = document.createElement("div");
+        div.className = "cell";
+        div.textContent = "❓";
+        grid.appendChild(div);
+    }
+
     function randomSymbol() {
         return symbols[Math.floor(Math.random() * symbols.length)];
     }
 
+    function setBalance() {
+        const input = parseInt(document.getElementById("balanceInput").value);
+        if (input >= 0) {
+            balance = input;
+            updateDisplay();
+            showMessage("💰 Balance updated", "win");
+        }
+    }
+
+    function changeBet(amount) {
+        bet += amount;
+        if (bet < minBet) bet = minBet;
+        if (bet > maxBet) bet = maxBet;
+        updateDisplay();
+    }
+
     function spin() {
         if (balance < bet && freeSpins === 0) {
-            document.getElementById("message").textContent = "❌ Not enough balance!";
+            showMessage("❌ Not enough balance!", "lose");
             return;
         }
 
-        const reels = ["r1", "r2", "r3"];
         const btn = document.getElementById("spinBtn");
         btn.disabled = true;
 
@@ -134,61 +170,63 @@
             freeSpins--;
         }
 
-        updateBalance();
+        updateDisplay();
 
-        reels.forEach(id => {
-            const reel = document.getElementById(id);
-            reel.classList.add("spinning");
-        });
+        const cells = document.querySelectorAll(".cell");
+        cells.forEach(c => c.classList.add("spinning"));
 
         setTimeout(() => {
-            let results = reels.map(id => {
-                const symbol = randomSymbol();
-                const reel = document.getElementById(id);
-                reel.textContent = symbol;
-                reel.classList.remove("spinning");
-                return symbol;
+            let results = [];
+
+            cells.forEach(c => {
+                const sym = randomSymbol();
+                c.textContent = sym;
+                c.classList.remove("spinning");
+                results.push(sym);
             });
 
             evaluate(results);
             btn.disabled = false;
-        }, 1200);
+        }, 1300);
     }
 
     function evaluate(results) {
-        let msg = "";
         let winAmount = 0;
+        let msg = "";
 
         const scatters = results.filter(s => s === scatter).length;
 
-        if (scatters === 3) {
-            freeSpins += 5;
-            winAmount = bet * 10;
-            msg = "🔥 JACKPOT! 3 SCATTERS + 5 FREE SPINS!";
-        } 
-        else if (scatters === 2) {
-            freeSpins += 2;
-            winAmount = bet * 5;
-            msg = "✨ 2 SCATTERS! Free Spins Awarded!";
+        if (scatters >= 5) {
+            freeSpins += 10;
+            winAmount = bet * 15;
+            msg = "🔥 MEGA SCATTER! 10 FREE SPINS!";
         }
-        else if (results[0] === results[1] && results[1] === results[2]) {
-            winAmount = bet * 3;
-            msg = "🎉 MATCH WIN!";
+        else if (scatters >= 3) {
+            freeSpins += 5;
+            winAmount = bet * 8;
+            msg = "✨ SCATTER WIN! Free Spins Awarded!";
         }
         else {
-            msg = "😢 No win. Try again.";
+            msg = "😢 No win.";
         }
 
         balance += winAmount;
-        updateBalance();
+        updateDisplay();
 
-        document.getElementById("message").innerHTML =
-            `<span class="${winAmount > 0 ? 'win' : 'lose'}">${msg}</span>` +
-            (freeSpins > 0 ? `<br>🎁 Free Spins Left: ${freeSpins}` : "");
+        showMessage(
+            msg + (freeSpins > 0 ? `<br>🎁 Free Spins Left: ${freeSpins}` : ""),
+            winAmount > 0 ? "win" : "lose"
+        );
     }
 
-    function updateBalance() {
+    function updateDisplay() {
         document.getElementById("balance").textContent = balance;
+        document.getElementById("bet").textContent = bet;
+    }
+
+    function showMessage(text, type) {
+        document.getElementById("message").innerHTML =
+            `<span class="${type}">${text}</span>`;
     }
 </script>
 
