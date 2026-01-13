@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Scatter Slot 5x4</title>
+<title>Scatter Slot 5x4 - Low Win Chance</title>
 
 <style>
     body {
@@ -83,7 +83,7 @@
 
 <body>
 
-<h1>🎰 Scatter Slot Machine (5 × 4)</h1>
+<h1>🎰 Scatter Slot Machine 5×4 - Low Win</h1>
 
 <div class="machine">
 
@@ -135,10 +135,6 @@
         grid.appendChild(div);
     }
 
-    function randomSymbol() {
-        return symbols[Math.floor(Math.random() * symbols.length)];
-    }
-
     function setBalance() {
         const input = parseInt(document.getElementById("balanceInput").value);
         if (input >= 0) {
@@ -178,35 +174,43 @@
         setTimeout(() => {
             let results = [];
 
-            cells.forEach(c => {
-                const sym = randomSymbol();
-                c.textContent = sym;
-                c.classList.remove("spinning");
-                results.push(sym);
-            });
+            // Decide if this spin is a win (5% chance)
+            const isWin = Math.random() < 0.05;
 
-            evaluate(results);
+            for (let i = 0; i < rows * cols; i++) {
+                let sym;
+                if (isWin) {
+                    // Force some scatters for win
+                    sym = (i % 6 === 0) ? scatter : symbols[Math.floor(Math.random() * (symbols.length - 1))];
+                } else {
+                    // Normal random symbols
+                    sym = symbols[Math.floor(Math.random() * (symbols.length - 1))]; // exclude scatter
+                }
+                cells[i].textContent = sym;
+                cells[i].classList.remove("spinning");
+                results.push(sym);
+            }
+
+            evaluate(results, isWin);
             btn.disabled = false;
         }, 1300);
     }
 
-    function evaluate(results) {
+    function evaluate(results, forcedWin) {
         let winAmount = 0;
         let msg = "";
 
         const scatters = results.filter(s => s === scatter).length;
 
-        if (scatters >= 5) {
+        if (forcedWin || scatters >= 5) {
             freeSpins += 10;
             winAmount = bet * 15;
-            msg = "🔥 MEGA SCATTER! 10 FREE SPINS!";
-        }
-        else if (scatters >= 3) {
+            msg = "🔥 BIG SCATTER WIN! 10 FREE SPINS!";
+        } else if (scatters >= 3) {
             freeSpins += 5;
             winAmount = bet * 8;
             msg = "✨ SCATTER WIN! Free Spins Awarded!";
-        }
-        else {
+        } else {
             msg = "😢 No win.";
         }
 
