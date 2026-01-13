@@ -2,49 +2,44 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Ultimate 5x4 Slot Casino</title>
+<title>Ultimate Animated 5x4 Slot Machine</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
 body {
-    margin:0; padding:0;
-    font-family: Arial, sans-serif;
-    background: radial-gradient(circle,#111,#000);
-    color:white; text-align:center;
+    margin:0; padding:0; font-family:Arial,sans-serif;
+    background: radial-gradient(circle,#111,#000); color:white; text-align:center;
 }
-h1 { color: gold; margin:15px 0; font-size:24px; }
+h1 {color:gold; margin:15px 0; font-size:24px;}
 .machine {
-    background: #222; max-width:95%; width:650px;
-    margin: 20px auto; padding:20px;
+    background:#222; max-width:95%; width:700px;
+    margin:20px auto; padding:20px;
     border-radius:15px; box-shadow:0 0 20px gold;
 }
 .grid {
-    display:grid; grid-template-columns:repeat(5,70px);
-    grid-template-rows:repeat(4,70px); gap:8px;
-    justify-content:center; margin:20px 0;
+    display:grid; grid-template-columns:repeat(5,80px);
+    grid-template-rows:repeat(4,80px); gap:8px; justify-content:center; margin:20px 0;
+    overflow:hidden;
 }
 .cell {
-    width:70px; height:70px; background:black;
+    width:80px; height:80px; background:black;
     border:2px solid gold; border-radius:8px;
-    line-height:70px; font-size:36px;
     display:flex; align-items:center; justify-content:center;
+    position:relative; overflow:hidden;
 }
-.spinning { animation: spin 0.3s infinite; }
-@keyframes spin { 0%{transform:translateY(0);}50%{transform:translateY(-5px);}100%{transform:translateY(0);} }
+.cell img { width:60px; height:60px; object-fit:contain; transition: transform 0.2s;}
+.highlight{ box-shadow:0 0 20px lime; animation: flash 0.5s infinite;}
+@keyframes flash{0%,100%{box-shadow:0 0 20px lime;}50%{box-shadow:0 0 40px lime;}}
 button { padding:6px 12px; font-size:14px; background:gold; border:none; border-radius:6px; cursor:pointer; margin:3px;}
 input { width:80px; padding:4px; text-align:center; font-size:14px;}
 .info { margin-top:6px; font-size:16px;}
-.win { color:lime;}
-.lose{ color:#ff4444;}
-.highlight{ box-shadow:0 0 15px lime; }
-@media(max-width:500px){
-    .grid{grid-template-columns:repeat(5,50px);grid-template-rows:repeat(4,50px);gap:6px;}
-    .cell{width:50px;height:50px;font-size:26px;line-height:50px;}
-}
+.win{color:lime;} .lose{color:#ff4444;}
+@media(max-width:500px){ .grid{grid-template-columns:repeat(5,50px);grid-template-rows:repeat(4,50px);gap:6px;}
+.cell{width:50px;height:50px;} .cell img{width:40px;height:40px;} }
 </style>
 </head>
 <body>
 
-<h1>🎰 Ultimate 5x4 Slot Casino</h1>
+<h1>🎰 Ultimate Animated 5x4 Slot Machine</h1>
 
 <div class="machine">
 <div class="info">Balance: 💰 <span id="balance">1000</span></div>
@@ -58,125 +53,92 @@ input { width:80px; padding:4px; text-align:center; font-size:14px;}
 <div class="info" id="message"></div>
 </div>
 
-<!-- Sound effects -->
 <audio id="spinSound" src="https://freesound.org/data/previews/341/341695_6241116-lq.mp3"></audio>
 <audio id="winSound" src="https://freesound.org/data/previews/331/331912_3248244-lq.mp3"></audio>
+<audio id="jackpotSound" src="https://freesound.org/data/previews/210/210096_3594527-lq.mp3"></audio>
 
 <script>
-// Symbols can be emojis or image icons
-const symbols=["🍒","🍋","🔔","💎","⭐"];
-const scatter="⭐";
+// Graphical symbols (replace with high-res if desired)
+const symbols=[
+    {name:"cherry",img:"https://i.postimg.cc/3JrR9yBx/cherry.png"},
+    {name:"lemon",img:"https://i.postimg.cc/fTchhXvV/lemon.png"},
+    {name:"bell",img:"https://i.postimg.cc/j5wbnYTN/bell.png"},
+    {name:"diamond",img:"https://i.postimg.cc/1t0J9Y4v/diamond.png"},
+    {name:"star",img:"https://i.postimg.cc/pdc0xkkz/star.png"}, // scatter
+    {name:"seven",img:"https://i.postimg.cc/2yJv3Lz7/seven.png"} // jackpot
+];
+const scatter="star"; const jackpot="seven";
 
 let balance=1000, bet=50, freeSpins=0;
 const rows=4, cols=5;
 const minBet=10,maxBet=500;
-const winChance=0.05;
 let autoSpin=false;
 const grid=document.getElementById("slotGrid");
 
-// Define paylines
+// Paylines
 const paylines=[
-    [0,1,2,3,4],
-    [5,6,7,8,9],
-    [10,11,12,13,14],
-    [15,16,17,18,19],
-    [0,6,12,18,14],
-    [15,11,7,3,19]
+    [0,1,2,3,4],[5,6,7,8,9],[10,11,12,13,14],[15,16,17,18,19],
+    [0,6,12,18,14],[15,11,7,3,19]
 ];
 
-// Create grid cells
+// Create grid
 for(let i=0;i<rows*cols;i++){
-    const div=document.createElement("div");
-    div.className="cell";
-    div.textContent="❓";
+    const div=document.createElement("div"); div.className="cell";
+    const img=document.createElement("img"); img.src=""; div.appendChild(img);
     grid.appendChild(div);
 }
 
-// Set balance
-function setBalance(){
-    const val=parseInt(document.getElementById("balanceInput").value);
-    if(val>=0){ balance=val; updateDisplay(); showMessage("💰 Balance updated","win"); }
+function setBalance(){ const val=parseInt(document.getElementById("balanceInput").value);
+    if(val>=0){balance=val; updateDisplay(); showMessage("💰 Balance updated","win");}
 }
+function changeBet(amount){ bet+=amount; if(bet<minBet) bet=minBet; if(bet>maxBet) bet=maxBet; updateDisplay();}
+function toggleAutoSpin(){ autoSpin=!autoSpin;
+document.getElementById("autoSpinBtn").textContent=autoSpin?"STOP AUTO":"AUTO SPIN"; if(autoSpin) autoSpinLoop();}
+function autoSpinLoop(){ if(autoSpin && (balance>=bet || freeSpins>0)){ spin(); setTimeout(autoSpinLoop,1800);}
+else { autoSpin=false; document.getElementById("autoSpinBtn").textContent="AUTO SPIN"; } }
 
-// Change bet
-function changeBet(amount){
-    bet+=amount;
-    if(bet<minBet) bet=minBet;
-    if(bet>maxBet) bet=maxBet;
-    updateDisplay();
-}
-
-// Toggle auto-spin
-function toggleAutoSpin(){
-    autoSpin=!autoSpin;
-    document.getElementById("autoSpinBtn").textContent=autoSpin?"STOP AUTO":"AUTO SPIN";
-    if(autoSpin) autoSpinLoop();
-}
-function autoSpinLoop(){
-    if(autoSpin && (balance>=bet || freeSpins>0)){
-        spin();
-        setTimeout(autoSpinLoop,1800);
-    } else { autoSpin=false; document.getElementById("autoSpinBtn").textContent="AUTO SPIN";}
-}
-
-// Spin
 function spin(){
-    if(balance<bet && freeSpins===0){ showMessage("❌ Not enough balance!","lose"); return; }
-    const btn=document.getElementById("spinBtn"); btn.disabled=true;
-    if(freeSpins===0) balance-=bet; else freeSpins--;
+if(balance<bet && freeSpins===0){showMessage("❌ Not enough balance!","lose"); return;}
+const btn=document.getElementById("spinBtn"); btn.disabled=true;
+if(freeSpins===0) balance-=bet; else freeSpins--; updateDisplay();
+document.getElementById("spinSound").currentTime=0; document.getElementById("spinSound").play();
 
-    updateDisplay();
-    const spinSound=document.getElementById("spinSound"); spinSound.currentTime=0; spinSound.play();
+const cells=document.querySelectorAll(".cell");
+for(let col=0;col<cols;col++){ for(let row=0;row<rows;row++){ const idx=row*cols+col;
+setTimeout(()=>cells[idx].classList.add("spinning"), col*150); } }
 
-    const cells=document.querySelectorAll(".cell");
-    for(let col=0;col<cols;col++){
-        for(let row=0;row<rows;row++){
-            const idx=row*cols+col;
-            setTimeout(()=>cells[idx].classList.add("spinning"), col*150);
-        }
+setTimeout(()=>{
+    const results=[];
+    const isWin=Math.random()<0.05; // chance for special
+    for(let i=0;i<rows*cols;i++){
+        let sym;
+        if(isWin) sym=Math.random()<0.1?jackpot:Math.random()<0.3?scatter:symbols[Math.floor(Math.random()*4)].name;
+        else sym=symbols[Math.floor(Math.random()*5)].name;
+        results.push(sym);
+        cells[i].querySelector("img").src = symbols.find(s=>s.name===sym).img;
+        cells[i].classList.remove("spinning"); cells[i].classList.remove("highlight");
     }
-
-    setTimeout(()=>{
-        const isWin=Math.random()<winChance;
-        let results=[];
-        for(let i=0;i<rows*cols;i++){
-            let sym;
-            if(isWin) sym = Math.random()<0.25?scatter:symbols[Math.floor(Math.random()*(symbols.length-1))];
-            else sym = symbols[Math.floor(Math.random()*(symbols.length-1))];
-            cells[i].textContent=sym; cells[i].classList.remove("spinning");
-            results.push(sym);
-        }
-        evaluate(results);
-        btn.disabled=false;
-    },1800);
+    evaluate(results); btn.disabled=false;
+},1800);
 }
 
-// Evaluate results
 function evaluate(results){
-    const cells=document.querySelectorAll(".cell");
-    let winAmount=0,msg=""; cells.forEach(c=>c.classList.remove("highlight"));
+const cells=document.querySelectorAll(".cell"); let winAmount=0; let msg=""; cells.forEach(c=>c.classList.remove("highlight"));
+const scatters=results.filter(s=>s===scatter).length;
+if(scatters>=5){freeSpins+=10; winAmount+=bet*15; msg="🔥 BIG SCATTER WIN! 10 FREE SPINS!";}
+else if(scatters>=3){freeSpins+=5; winAmount+=bet*8; msg="✨ SCATTER WIN! Free Spins!";}
 
-    const scatters=results.filter(s=>s===scatter).length;
-    if(scatters>=5){freeSpins+=10; winAmount=bet*15; msg="🔥 BIG SCATTER WIN! 10 FREE SPINS!";}
-    else if(scatters>=3){freeSpins+=5; winAmount=bet*8; msg="✨ SCATTER WIN! Free Spins Awarded!";}
+const jackpots=results.filter(s=>s===jackpot).length;
+if(jackpots>=3){winAmount+=bet*50; msg+="<br>🎰 JACKPOT!"; cells.forEach((c,i)=>{ if(results[i]===jackpot) c.classList.add("highlight"); }); document.getElementById("jackpotSound").play(); }
 
-    // Payline check
-    paylines.forEach(line=>{
-        const lineSymbols=line.map(idx=>results[idx]);
-        const first=lineSymbols[0];
-        if(first!==scatter && lineSymbols.every(s=>s===first)){
-            winAmount+=bet*3;
-            msg+="<br>🎉 Line Win!";
-            line.forEach(idx=>cells[idx].classList.add("highlight"));
-        }
-    });
+paylines.forEach(line=>{ const lineSymbols=line.map(idx=>results[idx]); const first=lineSymbols[0];
+if(first!==scatter && first!==jackpot && lineSymbols.every(s=>s===first)){ winAmount+=bet*3; msg+="<br>🎉 Line Win!"; line.forEach(idx=>cells[idx].classList.add("highlight")); }});
 
-    balance+=winAmount; updateDisplay();
-    if(winAmount>0){ const winSound=document.getElementById("winSound"); winSound.currentTime=0; winSound.play(); }
-    showMessage(msg + (freeSpins>0?`<br>🎁 Free Spins Left: ${freeSpins}`:""), winAmount>0?"win":"lose");
+balance+=winAmount; updateDisplay();
+if(winAmount>0) document.getElementById("winSound").play();
+showMessage(msg + (freeSpins>0?`<br>🎁 Free Spins Left: ${freeSpins}`:""),winAmount>0?"win":"lose");
 }
 
-// Display update
 function updateDisplay(){ document.getElementById("balance").textContent=balance; document.getElementById("bet").textContent=bet;}
 function showMessage(text,type){ document.getElementById("message").innerHTML=`<span class="${type}">${text}</span>`;}
 </script>
